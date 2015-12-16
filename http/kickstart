@@ -1,0 +1,79 @@
+#platform=x86, AMD64, or Intel EM64T
+#version=DEVEL
+# Firewall configuration
+firewall --disabled
+# Install OS instead of upgrade
+install
+# Use CDROM installation media
+cdrom
+# Root password
+rootpw --iscrypted $1$LA.pQ6XP$55CcBBVoW4Hlw/svddCsj0
+# System authorization information
+auth  --useshadow  --passalgo=sha512
+# Use text mode install
+text
+firstboot --disable
+# System keyboard
+keyboard us
+# System language
+lang en_US
+# SELinux configuration
+selinux --disabled
+# Do not configure the X Window System
+skipx
+# Installation logging level
+logging --level=info
+# Reboot after installation
+reboot
+# System timezone
+timezone --isUtc Etc/UTC
+# Network information
+network  --bootproto=dhcp --device=eth0 --onboot=on --noipv6 --hostname vagrant-centos-6.vagrantup.com
+# System bootloader configuration
+bootloader --location=mbr
+# Clear the Master Boot Record
+zerombr
+# Partition clearing information
+clearpart --all --initlabel 
+# Disk partitioning information
+part /boot --asprimary --fstype="ext4" --size=100
+part swap --fstype="swap" --size=1000
+part / --fstype="ext4" --grow --maxsize=8000 --size=8000
+
+user --name=vagrant --groups=wheel --password=vagrant
+user --name=packer --groups=wheel --password=packer
+
+#%post --nochroot
+%post
+
+exec < /dev/tty6 > /dev/tty6 2> /dev/tty6
+chvt 6
+
+/usr/bin/yum -y install sudo
+
+/bin/cat << EOF > /etc/sudoers.d/wheel
+Defaults:%wheel env_keep += "SSH_AUTH_SOCK"
+Defaults:%wheel !requiretty
+%wheel ALL=(ALL) NOPASSWD: ALL
+
+EOF
+/bin/chmod 0440 /etc/sudoers.d/wheel
+
+/bin/mkdir /home/vagrant/.ssh
+/bin/chmod 700 /home/vagrant/.ssh
+/usr/bin/curl -L -o /home/vagrant/.ssh/id_rsa https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant
+/usr/bin/curl -L -o /home/vagrant/.ssh/authorized_keys https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant.pub
+/bin/chown -R vagrant:vagrant /home/vagrant/.ssh
+/bin/chmod 0400 /home/vagrant/.ssh/*
+
+
+/usr/bin/yum -y clean all
+/bin/dd if=/dev/zero of=/boot/EMPTY bs=1M
+/bin/rm -f /boot/EMPTY
+/bin/dd if=/dev/zero of=/EMPTY bs=1M
+/bin/rm -f /EMPTY
+
+chvt 1
+exec < /dev/tty1 > /dev/tty1 2> /dev/tty1
+
+%end

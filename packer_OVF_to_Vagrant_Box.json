@@ -1,0 +1,83 @@
+{
+"builders": [{
+  "type": "virtualbox-ovf",
+  "source_path": "Centos_6.7_x64_minimal.ova",
+  "ssh_username": "packer",
+  "ssh_password": "packer",
+  "shutdown_command": "echo 'packer' | sudo -S shutdown -P now",
+  "vboxmanage": [
+    ["modifyvm", "{{.Name}}", "--memory", "512"],
+    ["modifyvm", "{{.Name}}", "--cpus", "1"]
+  ]
+}],
+"post-processors": ["vagrant"]
+}
+
+# template for:
+# OVF/OVA -> (Packer) -> Vagrant Box
+
+# COMMENTS:
+#1. download iso.
+#2. install this iso using Virtual Box.
+#3. USE NAT FOR NETWORK SETTINGS.
+#4. use port forwarding if needed.
+#5. install guest additions:
+#    yum install -y gcc perl kernel-devel-$(uname -r)
+#    mount /dev/cdrom /mnt
+#    cd /mnt
+#    ./VBoxLinuxAdditions.run
+#6. make some required changes for current project.
+#
+#make following configuration for PACKER anf VAGRANT:
+#
+#useradd packer
+#passwd packer
+#    "packer"
+#
+#useradd vagrant
+#passwd vagrant
+#    "vagrant"
+#
+#visudo -f /etc/sudoers.d/packer
+#    # add packer user:
+#    packer ALL=(ALL) NOPASSWD:ALL
+#
+#visudo -f /etc/sudoers.d/vagrant
+#    # add vagrant user:
+#    vagrant ALL=(ALL) NOPASSWD:ALL
+#
+#visudo
+#    # add this at the end of sudoers file, just before #includedir:
+#    Defaults:packer,vagrant !requiretty
+#
+#mkdir -p /home/vagrant/.ssh
+#chmod 0700 /home/vagrant/.ssh
+#wget --no-check-certificate https://raw.github.com/mitchellh/vagrant/master/keys/vagrant.pub -O /home/vagrant/.ssh/authorized_keys
+#chmod 0600 /home/vagrant/.ssh/authorized_keys
+#chown -R vagrant /home/vagrant/.ssh
+#
+#To prevent cahnging MAC address after export:
+#    for nic in /etc/sysconfig/network-scripts/ifcfg-eth*; do sed -i /HWADDR/d $nic; done
+#    rm /etc/udev/rules.d/70-persistent-net.rules
+#
+#Clean system:
+#yum clean all    OR    apt-get clean
+#
+#dd if=/dev/zero of=/EMPTY bs=1M
+#rm -rf /EMPTY
+#
+#cat /dev/null > ~/.bash_history && history -c && exit
+#
+#shutdown -h now
+#
+#EXPORT MACHINE AS OVF V2.0, using Virtual Box menu.
+#
+#Create Vagrant BOX using Packer:
+#packer validate ./packer_OVF_to_Vagrant_Box.json
+#packer build ./packer_OVF_to_Vagrant_Box.json
+#
+#Open this BOX in Vagrant:
+#vagrant box add packer_virtualbox-ovf_virtualbox.box --name OVF-PACKER-VAGRANT
+#vagrant init OVF-PACKER-VAGRANT
+#vagrant up
+#vagrant destroy

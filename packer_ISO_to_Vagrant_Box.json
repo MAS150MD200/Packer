@@ -1,0 +1,37 @@
+{
+"builders": [{
+  "type": "virtualbox-iso",
+  "guest_os_type": "RedHat_64",
+  "iso_url": "file:///Users/atsvetkov/Vagrant/GIT_PACKER/packer_tests/CentOS-6.7-x86_64-minimal.iso",
+  "iso_checksum": "9381a24b8bee2fed0c26896141a64b69",
+  "iso_checksum_type": "md5",
+  "ssh_username": "packer",
+  "ssh_password": "packer",
+  "shutdown_command": "echo 'packer' | sudo -S shutdown -P now",
+  "http_directory": "http",
+  "boot_command": [
+    "<wait><esc><esc>",
+    "linux ks=http://{{.HTTPIP}}:{{.HTTPPort}}/kickstart<enter>"
+  ]
+}],
+  "post-processors": ["vagrant"],
+  "provisioners": [{
+    "type": "shell",
+    "inline": [
+      "sleep 30",
+      "sudo mkdir /tmp/vboxguest",
+      "sudo mount -t iso9660 -o loop /home/packer/VBoxGuestAdditions.iso /tmp/vboxguest",
+      "sudo yum -y install vim",
+      "sudo yum -y groupinstall 'Development Tools'",
+      "sudo yum -y install kernel-devel-$(uname -r)",
+      "cd /tmp/vboxguest",
+      "sudo ./VBoxLinuxAdditions.run --nox11 || echo 'TEST!!!'",
+      "cd /tmp",
+      "sudo umount /tmp/vboxguest",
+      "sudo rmdir /tmp/vboxguest",
+      "#rm /home/vagrant/VBoxGuestAdditions.iso",
+      "echo Image Provisioned!"
+    ]
+  }]
+}
+
